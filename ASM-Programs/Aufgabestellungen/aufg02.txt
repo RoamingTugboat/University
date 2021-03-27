@@ -1,0 +1,166 @@
+
+-
+--------
+---------------
+-----------------
+KNOW THE CONCEPTS:
+ 
+What does it mean if a line in the program starts with the '#' character?
+    The line is not considered by the assembler program.
+    This is used to add comments.
+ 
+What is the difference between an assembly language file and an object code file?
+    The former contain commands in ASCII, the latter have been assembled into
+    machine code.
+ 
+What does the linker do?
+    According to 'man ld', it combines object and archive files and 'ties up'
+    symbol references. It basically produces an executable file based on one
+    or several object files.
+ 
+How do you check the result status code of the last program you ran?
+    By executing "echo $?" in the terminal
+ 
+What's the difference between movl $1, %eax and movl 1, %eax?
+    The former moves the value 1, the latter moves the value found at address 1
+ 
+Which register holds the system call number?
+    The extended accumulator register (%eax)
+ 
+What are indexes used for?
+    To iterate over collections of equally sized words
+ 
+Why do indexes usually start at 0?
+    They do because it makes most sense mathematically. Since indexes usually
+    require a multiplier to work (they always do in our assembly programs),
+    an offset of (multiplier)*0 will always point to the first word of the
+    collection.
+ 
+If issued the command movl data_items(,%edi,4), %eax and data_items was
+address 3634 and %edi held the value 13, what address would you be using
+to move into %eax?
+    3634 + 12*4 = 3682. The collection data_items starts at 3634, every
+    item has a size of 4 bytes, and we're looking for the item in list
+    slot 12 ("the 13th item"), so an offset of 12*4 has to be added to
+    the starting address.
+ 
+List the GPRs:
+    eax, ebx, ecx, edx, edi, and esi
+    
+
+What's the difference between movl and movb?
+    movl moves a long value (=32 bit = 4byte), movb moves one byte
+ 
+What is flow control?
+    Flow Control describes all instructions that result in jumps to different
+    lines of the assembly program. They are used to control the order and amount
+    of times instructions "flow" into the CPUs program counter.
+    
+What does a conditional jump do?
+    Exactly that, jump if a specific condition has been met. The condition state
+    is visible in a specific register that saves the result of a previous logical
+    comparison
+ 
+What things do you have to plan when writing a program?
+    Which registers will be used and what for, the programs layout
+ 
+Go through every instruction and list what addressing mode is being used for
+each operand:
+
+_start:
+    movl    $0, %edi                         Immediate and register
+    movl    data_items(, %edi, 4), %eax      Indexed w/ mult and register
+    movl    %eax, %ebx                       Register
+start_loop:
+    cmpl    $0, %eax                         Immediate and resiger
+    je      loop_exit                        Label
+    incl    %edi                             Register
+    movl    data_items(, %edi, 4), %eax      Indexed w/ mult and register
+    cmpl    %ebx, %eax                       Register
+    jge     start_loop                       Label
+    movl    %eax, %ebx                       Register
+    jmp     start_loop                       Label
+loop_exit:
+    movl    $1, %eax                         Immediate, register
+    int     $0x80                            Immediate (system call)
+    
+--
+--------
+---------------
+-----------------
+USE THE CONCEPTS:
+
+Modify the first program to return 3:
+    Just move $3 into %ebx right before the system call
+ 
+Modify maximum to find the minimum:
+    Change the conditional jump in line 24 to jump if the current temp value
+    is smaller or equal instead of greater or equal to the one in %ebx.
+ 
+Modify maximum to use 255 to end the list:
+    Replace the last element of the list with 0xFF, then change the conditional
+    termination in line 19 to "cmpl $0xFF, %eax"
+ 
+Modify to use an ending address rather than the number 0:
+    
+    Paste the following into the starting paragraph right into the '_start:' label section:
+	
+        leal    data_items, %ecx
+        addl    $20, %ecx
+		
+    This will keep the address of the first byte after the list in %ecx.
+    The conditional termination part (cmpl $value, %eax) gets replaced by:
+	
+        leal    data_items(, %edi, 4), %edx
+        cmpl    %edx, %ecx
+        je      end_loop
+		
+    This way, the program terminates as soon as data_items(, %edi, 4) points
+    to the address after the lists last byte.
+    
+
+Modify to use a length count instead:
+    Replace the conditional termination part with:
+        cmpl    $5, %edi
+        jge     end_loop
+ 
+What would the instruction movl _start, %eax do?
+    It would load the first long (=4 bytes) at the memory address of _start into %eax.
+ 
+How would this differ from movl $_start, %eax?
+    The "$" would prevent the symbols address from being resolved and load
+    the address number into the register instead.
+ 
+--
+--------
+---------------
+-----------------
+GOING FURTHER:
+
+Modify the first program to leave off the int instruction line. What error
+message do you get?
+    A Segfault when executing.
+    
+Why might this be?
+    Leaving out the interrupt means the OS never stops running the program.
+    Neither the assembler nor ld seem to mind that. Segfaults are usually
+    caused when a program tries to access restricted memory, but since this
+    one doesn't include a loop and therefore can only exceed its own allocated
+    memory if it doesn't have any in the first place, my best guess would be
+    that debian is either throwing out segfaults as a failsafe to prevent such
+    programs from reserving memory or doesn't allocate memory to it because
+    the executable doesn't include an interrupt call.
+ 
+So far we've discussed three approaches to finding the end of the list:
+Special number/end address/count. Which approach do you think is best?
+Why?
+    
+    I prefer the special number approach because it requires
+    the least amount of writing, but it prevents the value from
+    being used in the rest of the list. So, since counting in the
+    next simplest, I'd go with that.
+
+What would you do if the list was sorted? Why?
+    I'd still go with counting because the list being sorted doesn't change
+    the situation.
+ 

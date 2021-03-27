@@ -1,0 +1,59 @@
+1.	Experimentieren Sie mit der Umgebungsvariablen LD_LIBRARY_PATH. Dazu sollten Sie die zu ladende
+	dynamische Bibliothek in ein beliebiges Verzeichnis stecken und dann das Hauptprogramm in einem
+	anderen Verzeichnis starten. Was müssen Sie machen, damit die Bibliothek gefunden wird?
+
+
+	
+	
+2.	Vollziehen Sie praktisch nach, wie im Kapitel 8 aus write-record.s und read-record.s eine
+	dynamische Bibliothek gemacht wird.
+	
+
+	
+	
+3.  Was bedeuten die folgenden Zeilen in der Sprache C:
+
+		typedef int int32_t;
+
+			> Definiere neuen Datentyp "int32_t". Er soll wie int funktionieren (32bit-Wert)
+			
+			
+		typedef short int16_t;
+
+			> Definiere neuen Datentyp "int16_t". Er soll wie short funktionieren (16bit-Wert)
+
+			
+		int f1(char c, int i, float f);
+
+			> Die funktion "f1" liefert einen 32bit-Zahlwert als return-wert.
+			> Ihre parameter sind:
+			> 	Ein 8bit-segment, das als ASCIIcode interpretiert werden soll
+			> 	eine 32bit-Zahl in regulaerem, signiertem Binaercode
+			> 	eine 32bit Zahl im Float-layout (sign, exponent, mantisse)
+
+				
+		int32_t f2(int32_t *ip);
+
+			> Die funktion "f2" returnt einen int32_t (=int) und benutzt als einzigen parameter einen
+			> 32bit-Pointer, dessen Ziel als 32bit-Zahlwert interpretiert werden soll.
+
+			
+		int *f3(char *cp);
+
+			> Die funktion "f3" returnt einen pointer auf einen 32bit-Zahlwert. Ihr einziger Parameter
+			> ist ein 32bit-Pointer auf einen 8bit-Wert, der als ASCIIcode interpretiert werden soll
+
+			
+		int f4(double d);
+
+			> Die funktion "f4" returnt einen 32bit zahlwert und benutzt als einzigen parameter einen 64bit-zahlwert.
+
+			
+		int f5(int16_t si);
+
+			> Die funktion "f5" returnt einen 32bit zahlwert und benutzt als einzigen parameter einen 16bit-zahlwert
+			
+
+
+			
+.

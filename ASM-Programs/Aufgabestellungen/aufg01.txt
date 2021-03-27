@@ -1,0 +1,108 @@
+Uebungsblatt1:
+http://elk.informatik.fh-augsburg.de/hhweb/sysprog/Uebungen/uebung1.html
+
+
+1. (Praktische Aufgabe)
+
+2. Worin unterscheiden sich Programmiersprachen die sich zur maschinennahen (= systemnahen) Programmierung eignen
+   von Sprachen, die man "high-level" Sprachen nennt?
+   
+		Maschinennahe Sprachen erlauben direkte kommunikation mit der ALU der CPU ueber ihren Opcode. Sie erlauben deshalb
+		sehr exakte Kontrolle ueber alle ausgefuehrten Operationen, sind aber zeitaufwaendig zu schreiben und setzen
+		Verstaendnis der verwendeten CPU-Architektur und der Struktur komputationaler Operationsablaeufe voraus.
+		
+		High-Level Sprachen sind sprachen, die den exakten Maschineninstruktionen strukturell sehr unaehnlich sind. Sie fassen
+		viele Maschinenbefehle und -ablaeufe zu kurzen Befehlen zusammen und erlauben daher eine viel einfacherere Kommunikation mit
+		der CPU.
+
+
+   Nennen Sie jeweils zwei Sprachen aus jeder Gattung.
+		Maschinensprachen: x86 Assembly Language, MIPS Assembly Language
+		High-Level: C++, Python
+   
+   Welche Programmiersprachen kennen Sie schon ein wenig?
+		Java, C++
+		
+		
+		
+3. Welche Anwendungsbereiche für systemnahe Programmierung kennen Sie?
+
+		Compilerbau, Programmierung eingebetteter Systeme
+		
+		
+		
+4. Lesen Sie die Kapitel 1 und 2 im Buch von Bartlett. Beantworten Sie die Fragen am Ende des zweiten Kapitels.
+
+		>Describe the Fetch-Execute Cycle:
+			Programminstruktionen werden in der CPU im PROGRAM COUNTER aufgestapelt und abgearbeitet. Der aktuelle Eintrag verweist
+			auf eine Speicheraddresse, die von der CPU dann als Instruktion interpretiert und zusammen mit etwaig zugaehoerigen
+			Variablen aus dem Speicher geladen wird. Durch Verwendung der ALU und ihrer verbundenen Caches wird eine Berechnung ausgefuehrt
+			und das Ergebnis entweder zurueck in den Speicher geschrieben oder im Prozessorcache fuer weitere Benutzung vorgehalten.
+			
+		>What is a Register?
+			Ein Register ist ein in die CPU eingebundener, relativ kleiner Speicherplatz, der schnellstmoeglichen Zugriff auf
+			Zwischenergebnisse sowie effizientes Caching ausstehender Operationen bzw bald benoetigter Daten ermoeglichen soll.
+			
+		>How do you represent numbers larger than 255?
+			Indem man mehrere bytes als zusammengehoerige Zahl interpretiert.
+			
+		>How big are the registers on the machines we will be using?
+			Prozessorregister sind relativ klein (32-128 bytes lang lt. "Intel® 64 and IA-32 Architectures Software Developer’s Manual
+			Combined Volumes:1, 2A, 2B, 2C, 3A, 3B, and 3C" http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html)
+		
+		>How does a computer know how to interpret a given byte or set of bytes of memory?
+			Daten werden nur als binaere Werte gespeichert, wie die CPU diese interpretiert haengt vom Kontext ab (z.B. als Instruktion, Zahlwert, pointer)
+			
+		>What are the addressing modes and what are they used for?
+			Die Addressmodi sind: Direkte Addressierung (Speicherplatz direkt genannt) und Indirekte Addressierung (register mit speicherplatz genannt; base pointer: register mit pointer zum speicherplatz genannt),
+									Unmittelbare Addressierung (direkte Wertuebermittlung), Registeraddressierung (erster Wert eines Registers wird benutzt),
+									Indexaddressierung (startpunkt, offset und evtl. Multiplikant werden benutzt um iteration ueber einen Datensatz zu erleichtern)
+						
+		>What does the Instruction Pointer do?
+			Ein I.P. ist ein im Program Counter liegender pointer, der auf die Addresse der naechsten Auszufuehrenden Instruktion der CPU zeigt. Die CPU
+			laedt die Daten aus der so angegebenen Addresse und interpretiert sie als Instruktion (= loest sie im Instruction Decoder auf und fuehrt sie in der ALU aus).
+			
+			
+			
+			
+			
+		>What data would you use in an employee record? How would you lay it out in memory?
+			Name, Geburtsdatum, Kontaktarten(TelefonNr, Anschrift), Position, Foto, Kommentare, Lebenslauf
+			Daten stark schwankender Laenge sollten aus Effizienzgruenden als Pointer gespeichert werden (zB Kommentare, Lebenslauf, Foto) waehrend
+			vorhersagbar lange Daten wie Geburtsdatum, Identifikationsnummer des momentanen Bundeslandes etc mit festgelegtem offset gespeichert werden koennen.
+
+		>What addressing mode would be used?
+			Indexed Addressing ohne Multiplikator, da der Startpunkt und die Abstaende zu den folgenden Datenpunkten bekannt aber die Abstaende variabel sind
+			Indexed Addressing m. Multipl. um Zugriffe auf Programmiersprachenebene zu erleichtern aber leicht an Effizienz einzubuessen (benoetigt umstrukturierung
+			zu Pointerliste).
+			
+		>Base Pointer addressing mode, registers holds 3122, offset 20:
+			Refernziert 3142 (=20. byte nach 3122)
+			
+		> Indexed addr.: base address is 6512, index register is 5, mult is 4:
+			Referenziert 6512 und gibt an, dass die im array enthaltenen werte 6 bytes lang sind (1. Wert von 6512-6517).
+			Zugriff soll auf den 4. Wert im array erfolgen (= 6 bytes nach dem 3. Eintrag = Eintrag im slot 3), also auf Addresse 6512 + 3*6 = 6530
+			
+		> Indexed addr, base addr is 123472, index reg is 0, mult is 4:
+			Referenziert 123472, Daten sind jeweils 1 byte gross, also wird das 4. byte (base + 3*1) der Reihe referenziert = 123475
+			
+		> Indexed addr, base is 9123478, reg contains 20, mult 1:
+			Referenziert 9123478, jedes Wort ist 20 bytes lang und der prozessor soll das erste wort der reihe laden, als werden
+			die 20 bytes nach einschliesslich 9123478 geladen.
+		
+		
+		
+		> What are the miminum number of addressing modes needed for computation?
+			Nachdem eine CPU Zugriff auf Register und Speicher benoetigt werden minimal zwei modi benoetigt: Direct, Register
+			
+		>Why include unneeded modes?
+			Weil sie das Schreiben von Assemblercode erleichtern.
+			
+		>How does pipelining affect the fetch-execute cycle?
+			Pipelining beschreibt das Konzept, alle inaktiven Teile einer CPU zu evtl. anstehenden Aufgaben zu benutzen, obwohl moeglicherweise 
+			noch Operationen in Bearbeitung sind. Dies verkompliziert den fetch-execute cycle, da er nun Abfragen sichergehen muss, 
+			dass es nicht zu Ueberlagerungen und Konflikten kommt.
+			
+		>Describe the tradeoffs between fixed-length instrucitons and variable-length instructions.
+			Fixlaenge verschwendet Speicherplatz aber vereinfacht die Bearbeitung da alle Befehle den gleichen Abstand zueinander haben,
+			variable Laenge hat den umgekehrten Effekt.

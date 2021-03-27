@@ -1,0 +1,446 @@
+Student:	Jakob Vogg
+Gruppe:		Unbekannt
+
+
+
+
+Aufgabe 1
+
+	Wie macht man aus einem Zahlenwert 0...9 das entsprechende ASCII Zeichen?
+			
+		Man addiert '0', also den Wert des ASCII-Zeichens fuer die Zahl null, und zeigt das Ergebniss als ASCII-Zeichen an.
+			
+		
+	Wie macht man im ASCII Code aus einem grossen Buchstaben einen kleinen Buchstaben?
+
+		Indem man die Differenz der ASCII-Symbole 'A' und 'a' zum grossen Buchstaben addiert.
+			
+		
+		
+Aufgabe 2
+
+	Schreiben Sie ein Programm in Assembler, das die Anzahl der Zeichen und die Anzahl der Zeilen
+	in einer Textdatei bestimmt und auf den Bildschirm (stdout) schreibt. Der Name der Datei wird
+	als Argument an das Programm übergeben.
+
+	
+		# PURPOSE:
+		# This Program prints out the amount of symbols and line
+		# breaks in a given text file.
+		#
+		# USAGE:
+		# First parameter will be used as file name. Result will be printed in console.
+
+
+		.section .data
+		  AMOUNT_SYMBOLS: .long  0
+		  AMOUNT_BREAKS:  .long  0
+
+		  s_CountedSymbols: .asciz "Counted Symbols: %d\n"
+		  s_CountedBreaks:  .asciz "Counted Breaks: %d\n"
+		  
+
+
+		.section .bss
+		  .equ   BUFFER_SIZE, 500
+		  .lcomm BUFFER_SPACE, BUFFER_SIZE
+		  .lcomm FD_SOURCE_FILE, 32
+
+
+
+		.section .text
+		  .globl _start
+
+
+		_start:
+
+		 movl %esp, %ebp            #TODO: Wieso ist der basepointer schon korrekt
+									#gesetzt, passiert das nur wenn das programm mit
+									#parametern aufgerufen wird, wieso muss dann esp
+									#noch manuell bewegt werden, was passiert dann
+									#bei beenden des programmes automatisch
+		 
+		 #Open given file.
+		 movl $5, %eax
+		 movl 8(%ebp), %ebx  #use first parameter as file name
+		#movl $FILE, %ebx
+		 movl $0, %ecx
+		 movl $0666, %edx
+		 int  $0x80
+		 
+		 movl %eax, FD_SOURCE_FILE  #TODO USING $ CAUSES OPERAND TYPE MISMATCH. WHY?
+									#Does movl x, y not mean "move x to address y"?
+									#besides, moving FD_SOURCE_FILE moves the actual 
+									#data, while $FD_SOURCE_FILE would move an address.
+									#what gives
+		 
+		#Iterate over buffer:
+		#Read from given file:
+		read_loop_begin:
+
+		 movl $3, %eax
+		 movl FD_SOURCE_FILE, %ebx 
+		 movl $BUFFER_SPACE, %ecx  
+		 movl $BUFFER_SIZE, %edx
+		 int  $0x80
+
+		 cmpl $0, %eax  #if end of file is reached
+		 je end_loop    #... jump to end_loop
+		 
+		 
+		 pushl $BUFFER_SPACE #BUFFER MEM ADDRESS
+		 pushl %eax          #BUFFER LENGTH
+		 call  count_stuff         
+		 addl  $8, %esp
+
+		 jmp read_loop_begin
+
+
+		#Write result to STDOUT
+		end_loop:
+		 #movl $4, %eax     
+		 #movl $1, %ebx
+		 ##movl AMOUNT_SYMBOLS, %ecx #TODO PRINT OUT RESULTS
+		 #movl buffer_contains, %ecx
+		 #movl $100, %edx
+		 #int $0x80
+
+		 pushl AMOUNT_SYMBOLS  #Can't find any documentation on printf
+		 pushl $s_CountedSymbols
+		 call  printf
+		 addl $8, %esp
+
+		 pushl AMOUNT_BREAKS
+		 pushl $s_CountedBreaks
+		 call  printf
+		 addl $8, %esp
+
+
+
+		#Close input file
+		 movl $6, %eax
+		 movl FD_SOURCE_FILE, %ebx
+		 int  $0x80
+
+		#Exit
+		 movl $1, %eax
+		 movl $0, %ebx
+		 int  $0x80
+
+
+		######################
+		#
+		# READ THE BUFFER
+		######################
+		#
+		#If there's a symbol, inc numOfSymbols.
+		#If there's a '\n', inc numOfLines.
+		######################
+
+		.type count_stuff, @function
+		count_stuff:
+		 pushl %ebp
+		 movl  %esp, %ebp
+
+		 movl 12(%ebp), %eax #Buffer 
+		 movl  8(%ebp), %ebx #Buffer length
+		 movl $0, %edi
+
+		 cmpl $0, %ebx   #If buffer length was 0,
+		 je stop_counting #Jump out before looping
+
+		count_loop:
+		 movb (%eax, %edi, 1), %cl
+		 cmpb $10, %cl    #10 is ASCII line break
+		 je increment_breaks
+		 
+		 cmpb $33, %cl    #visible ASCII symbols range from 33-126
+		 jl continue_counting
+		 cmpb $126, %cl
+		 jg continue_counting
+
+		 jmp increment_symbols
+
+
+		increment_breaks:
+		 incl AMOUNT_BREAKS
+		 jmp continue_counting
+
+		increment_symbols:
+		 incl AMOUNT_SYMBOLS
+		 jmp continue_counting
+
+
+		continue_counting:
+		 incl %edi
+		 cmpl %edi, %ebx
+		 jne count_loop    #if end of buffer is NOT reached, jump back into loop.
+
+		stop_counting:
+		 movl %ebp, %esp   
+		 popl %ebp
+		 ret
+
+
+		#DEBUGGING:
+		#
+		#  leal  var, %reg
+		#  movl $var, %reg
+		#
+		# both provide same result
+		#
+		#
+		#
+		#
+		#.bss variables:
+		#
+		#movl  BUFFER_SPACE, %eax    #MOVES 0 TO EAX
+		#movl $BUFFER_SPACE, %ebx    #MOVES MEMORY ADDRESS
+		#leal  BUFFER_SPACE, %ecx    #MOVES MEMORY ADDRESS
+		#leal $BUFFER_SPACE, %edx    #OPERAND SIZE MISMATCH. Should just resolve 
+		#                            #twice though?
+		#
+		#
+		#data variables:
+		#
+		#movl  AMOUNT_SYMBOLS, %eax  #MOVES VALUE
+		#movl $AMOUNT_SYMBOLS, %ebx  #MOVES MEMORY ADDRESS
+		#
+		#
+		#.equ variables:
+		#
+		#movl  BUFFER_SIZE, %eax     #SEGFAULT - Why?
+		#movl $BUFFER_SIZE, %ebx     #MOVES 500 TO EBX
+		#
+
+
+
+	
+Aufgabe 3
+	//Tutor kommentar in moodle: "Aufgabe 3: [...] add_year fehlt ganz", aber der Begriff add_year taucht im gesamten Buch nicht auf.
+	
+	Wie ist das Programm im Bartlett in Kapitel 6 strukturiert? Zeichnen Sie in einem Diagramm die Abhängigkeiten
+	der einzelnen Dateien. Mit A ===> B kennzeichnen Sie, dass Datei B die Quelltextdatei A inkludiert. Mit A + B
+	kennzeichnen Sie, dass die Objektdateien A und B miteinander gelinkt werden.
+
+		count-chars.o
+		write-newline.o <== linux.s
+		
+		write-record.s <== record-def.s, linux.s
+		write-records.s <== record-def.s, linux.s		
+		write-records = write-record.o + write-records.o
+		
+		read-record.s  <== record-def.s, linux.s
+		read-records.s <== record-def.s, linux.s	
+		read-records = read-record.o + count-chars.o + write-newline.o + read-records.o
+
+		
+	
+Aufgabe 4
+
+    Schreiben Sie das Programm um, so dass Kommandozeilenargumente verwendet werden.
+
+		Zeile loeschen:
+			file_name: .ascii "test.dat\0"
+
+		Alle Referenzen auf "$file_name" durch 8(%ebp) ersetzen. So wird der erste uebergebene parameter
+		als Filename benutzt. Konventionskonform kann in .data auch ".equ FILE_NAME, 8" eingetragen werden
+		und die oben genannte Basepointerreferenz durch FILE_NAME(%ebp) ersetzt werden.
+
+	
+    Fangen Sie Fehler ab, die beim Öffnen der Dateien auftreten können. Welche Fehlercodes es gibt, finden Sie in
+	der man page "man 2 open".
+	
+		Aufgabestellung unklar. Lt. Bartlett wird eine negative Zahl in %eax zurueckgegeben,
+		wenn ein Fehler auftritt - man 2 open erklaert aber nicht, welche Rueckgabewerte welche
+		Fehler bedeuten. In der folgenden Loesung wird angenommen, dass die Fehlercodes -1, -2,
+		und -3 generische Fehler bedeuten, und manuelle ausgabe von fehlern erforderlich ist.
+
+		Folgender Code wird eingefuegt:
+
+			.section .data
+
+			ER_Generic01:
+			 .ascii "Error 1 has occured in codeFile.s .\0"
+
+			ER_Generic02:
+			 .ascii "Error 2 has occured in codeFile.s .\0"
+
+			ER_Generic03:
+			 .ascii "Error 3 has occured in codeFile.s .\0"
+
+			.section text
+
+				(...)
+
+
+			 (read or write function call)
+
+
+			 cmpl %eax, $0
+			 jge continue_processing
+
+			 cmpl %eax, $-1
+			 je error1
+
+			 cmpl %eax, $-2
+			 je error2
+
+			 cmpl %eax, $-3
+			 je error3
+		
+
+			error1:
+			 pushl $ER_Generic01
+			 call count_characters
+			 addl $4, %esp
+
+	`		 movl %eax, %edx
+			 movl $4, %eax
+			 movl $2, %ebx
+			 movl $ER_GENERIC01, %ecx
+				 jmp exit
+
+			error2:
+			 pushl $ER_Generic02
+			 call count_characters
+			 addl $4, %esp
+
+	`		 movl %eax, %edx
+			 movl $4, %eax
+			 movl $2, %ebx
+			 movl $ER_GENERIC02, %ecx
+			 jmp exit
+
+			error3:
+			 pushl $ER_Generic03
+			 call count_characters
+			 addl $4, %esp
+
+	`		 movl %eax, %edx
+			 movl $4, %eax
+			 movl $2, %ebx
+			 movl $ER_GENERIC03, %ecx
+			 jmp exit
+
+
+			continue_processing:
+
+				(...)
+				
+			exit:
+
+				(...)
+
+
+		Dies bewirkt, dass Fehlercodes (= %eax kleiner als 0) abgefangen werden, zur entsprechenden
+		Behandlungsstelle gesprungen wird, und schliesslich eine Fehlermeldung nach FD 2 (stderr)
+		geschrieben wird.
+
+	
+	
+	
+    Schreiben Sie ein Programm mit dem Sie auswählen können, welcher Datensatz ausgegeben werden soll. Sie geben auf der Kommandozeile
+	einfach die Nummer 0, 1, 2, ... an, dann wird der jeweilige Datensatz ausgegeben. Mit dem Systemaufruf lseek() können Sie schnell
+	an eine beliebige Stelle in der Datei gehen. Der Funktionscode für lseek in Register eax ist 19. Siehe "man 2 lseek".
+	
+	
+		.section .data
+
+		 inputRequest: 		.ascii "Enter the ID of the set you would like to read"
+		 newline:	   		.ascii "\n\0"
+		 filename:	  		.ascii "record.txt\0" #persistent file used for record storage
+		 linefeed:	   		.ascii "\r"
+		 user_input_length: .long 0
+		 record_length:     .long 140
+		 
+		.section .bss
+		 .lcomm databuffer, 140  	  #all purpose buffer
+		 .lcomm userInputBuffer, 8   #buffers requested number by user
+		 .lcomm fd_record, 4     	  #file descriptor of file into which records are written
+
+		.section .text
+
+		.globl _start
+		_start:
+
+		 movl %esp, %ebp
+
+		open_record: #Open (or create) record file in current dir
+		 movl $5, %eax         
+		 movl $filename, %ebx   
+		 movl $0111, %ecx      
+		 movl $0666, %edx       
+		 int $0x80
+
+		 movl %eax, fd_record  #save FD in fd_record
+		 
+		ask_for_record_ID:			#Ask which record the user would like to see
+		 movl $4, %eax        		#"Write"
+		 movl $1, %ebx         		#"Into STDOUT"
+		 movl $inputRequest, %ecx   #"From this address"
+		 movl $46, %edx				#"For this many bytes"
+		 int $0x80
+		 
+		read_first_answer: 			#Read answer from STDIN into buffer.
+		 movl $3, %eax          	#"Read"
+		 movl $0, %ebx          	#"From STDIN"
+		 movl $userInputBuffer, %ecx#"To this address"
+		 movl $8, %edx          	#"For this many bytes"
+		 int $0x80
+		 
+		 
+		##now, check how long user input was
+		#movl $0, %ebx
+		#movl $0, %edi
+		#
+		#check_user_input_length:
+		# movl $userInputBuffer(,%edi,4), %ebx
+		# cmpl $linefeed, %ebx
+		# je have_user_input_length
+		# 
+		# incl %edi
+		# jmp  check_user_input_length
+		#	
+		#have_user_input_length:
+		# movl %edi, $user_input_length
+		
+		pushl $userInputBuffer
+		call atoi
+		addl %esp, $4 
+		
+		#eax now contains requested value 
+
+		 
+		 #lseek: go to xth location in record file as requested by user
+		 movl %eax, %ecx
+		 mull $record_length, %ecx
+		 movl $19, %eax
+		 movl fd_record, %ebx
+		 movl $2, %edx
+		 int $0x80
+
+
+		#finally, print out requested record
+		print_record:
+		 movl $4, %eax          	#write
+		 movl fd_record, %ebx  		#from here
+		 movl $1, %ecx				#into stdout
+		 movl $140, %edx			#for 140 bytes
+		 int $0x80
+
+
+		linebreak:     
+		 movl $4, %eax          
+		 movl $0, %ebx  
+		 movl $newline, %ecx
+		 movl $1, %edx
+		 int $0x80
+
+		exit:
+		 movl $1, %eax
+		 movl $0, %ebx
+		 int $0x80
+
+
+

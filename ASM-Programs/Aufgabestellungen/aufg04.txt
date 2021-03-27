@@ -1,0 +1,231 @@
+Aufgabe 1
+
+	Wozu braucht man einen Stack? Über welche Befehle spricht man den Stack an?
+	
+		Um Parameter, return-addresse und lokale variablen einer funktion und um die %ebp-addresse
+		der vorhergehende funktion zu speichern und abzurufen. Der Stack wird ueber pushl und popl
+		angesprochen.
+		
+			pushl bewegt %esp auf eine 4 byte niedrigere Addresse und kopiert den long-wert
+			im angegebenen Register an diese neue Addresse.
+			
+			popl kopiert %esp's momentanen Wert in das angegebene Register und bewegt %esp
+			dann um 4 bytes nach oben.
+			
+		
+	
+Aufgabe 2
+
+	Sehen Sie sich folgenden Assembler-Quelltext an. Die drei Punkte ... stehen für beliebigen Code, der uns nicht interessiert.
+	
+	
+			...`
+			pushl $2               # (1)
+			pushl $4               # (1)
+			call tuwas             # (2)
+			addl $8, %esp          # (3)
+			...
+
+			tuwas:
+			  pushl %ebp           # (4)
+			  movl %esp, %ebp      # (4)
+			  subl $8, %esp        # (5)
+			  ...
+			  movl %ebp, %esp      # (6)
+			  popl %ebp            # (6)
+			  ret                  # (7)
+	
+	
+	Beantworten Sie bitte folgende Fragen:
+
+			Beschreiben Sie, was an den Stellen (1) bis (7) gemacht wird.
+			
+				(1): 2 Parameter (Werte 2 und 4) werden auf den Stack geschrieben.
+				(2): Die Funktion "tuwas" wird aufgerufen, d.h. %eip's position wird
+					 auf den Stack geschrieben und %eip springt zur funktion.
+				(4): Die aktuelle Addresse im Basepointerregister wird auf den Stack geschrieben (= Addresse des vorhergehenden BPs)
+					 und %esp (Stackpointer) wird nach %ebp kopiert, beide zeigen nun auf den Eintrag mit der vorhergehenden BPA.
+				(5): 64 bit werden fuer lokale Variablen reserviert, indem der Stackpointer um 8 bytes nach unten bewegt wird.
+				(6): Nachdem die funktion tuwas nun anscheinend durchgelaufen ist, kehrt %esp auf %ebps momentane addresse zurueck.
+					 Dann wird durch poppen des Stacks %ebp auf den Basepointer-Addresseintrag der vorhergehenden Funktion gesetzt.
+					 %esp zeigt nun auf die return-addresse.
+				(7): Durch 'ret' wird %esp nach %eip gepoppt. %esp zeigt nun auf den ersten parameter des aktuellen Stacks und %eip wird
+					 an der ihm uebergebenen addresse die uebergeordnete funktion fortfahren.
+				(3): %esp uebergeht die parameter der aktuellen funktion, wird also um 64 bit nach oben verschoben und zeigt nun wieder
+					 auf den hoechsten wert des vorhergehenden Stacks und kann somit weiterbenutzt werden.
+					 
+					 
+			Zeichnen Sie den Stack direkt nach der Ausführung von Zeile 5. Zeichnen Sie auch Framepointer und Stackpointer ein.
+								
+			[hoechste Addresse] [   ...   ]
+			 [vorheriger stack] [   ...   ]
+			  [aktueller Stack]	long-wert 2
+								long-wert 4
+								return-addresse
+								alter basepointer 		<- %ebp = Frame-/Basepointer
+								reservierter long #1
+								reservierter long #2	<- %esp = Stackpointer
+				 [Restspeicher] [	...	  ]
+				
+				
+			Wie greift man innerhalb der Funktion tuwas() auf die lokalen Daten zu? Nehmen Sie an, dass die 8 Byte aus zwei
+			Integer Werten bestehen. Schreiben Sie die Framepointer-relative Adressierung für den Integer mit der kleineren
+			Adresse hin.
+				
+				Indem man einen offset zu ebp hinzufuegt. Zugriff auf den reservierten long #2 erfolgt also durch -8(%ebp).
+
+			
+			
+			
+
+
+Aufgabe 3
+
+	Hier sind einige Frage zur C Aufrufkonvention:
+
+			In welcher Reihenfolge werden die Argumente der Funktion cfun(int a, int b, int c) auf dem Stack abgelegt?
+			
+				c, b, a
+			
+			Wie wird der Rückgabewert einer Funktion an den Aufrufer übergeben? Unterscheiden Sie: (a) der Wert ist 32-Bit gross, (b) der Wert ist grösser als 32-Bit.
+			
+				Er wird in der Funktion nach %eax geschrieben. Ist der Wert zu gross, wird stattdessen der pointer zum returnwert nach %eax geschrieben.
+				
+				
+			Wer kümmert sich um die Sicherung der Register -- der Aufrufer oder der Aufgerufene?
+			
+				Lt. Buch soll sich der aufrufende Code um Sicherung kuemmern, indem er benoetigte Registerinhalte auf den Stack pusht.
+				
+				
+			Wer korrigiert den Stack, der Aufrufer oder der Aufgerufene?
+
+			(??)"Korrigiert den Stack"?
+				Der aufgerufene Code ist verantwortlich fuer das korrekte ruecksetzen von %ebp
+				und %eip, der aufrufende Code "korrigiert" dann die Position von %esp.
+				
+				
+Aufgabe 4
+
+	...
+
+Aufgabe 5
+
+
+	Schreiben Sie eine Funktion quadrat(x), die aus dem Argument x das Quadrat x * x berechnet. Rufen Sie diese Funktion zum Test auch ein
+	paar Mal mit unterschiedlichem Argument.
+	
+
+			# PURPOSE: Program to compute the square of
+			# a number with itself.
+
+			.section .data
+				result: .long 0
+
+			.section .text
+				.globl _start
+
+			_start:
+				pushl $3        # push fucntion parameter
+				call  quadrat   # call the function
+
+				addl  $4, %esp    # move the stack pointer back to top of old stack
+				movl result, %ebx # move function result to %ebx
+
+				movl $1, %eax   # exit (%ebx is returned)
+				int $0x80
+
+
+			.type quadrat, @function
+
+			quadrat:
+				pushl %ebp             # save old base pointer
+				movl  %esp, %ebp       # make stack pointer the base pointer
+				
+				movl  8(%ebp), %eax    # put first parameter in %eax
+				imul  %eax, %eax       # multiply the current result    
+				movl  %eax, result     # copy result into global variable
+
+				movl  %ebp, %esp       # restore the stack pointer
+				popl  %ebp             # restore the base pointer
+				ret					   # pop stackpointer to %eip and increment %esp by 4
+	
+	
+	
+	
+	
+	Schreiben Sie die Maximumsuche aus dem Kapitel 3 nun als Funktion maximum(ptr). Der Zeiger ptr zeigt auf eine Liste von Elementen,
+	deren grösster Wert zurückgegeben wird. Rufen Sie diese Funktion zum Test ein paar Mal mit unterschiedlichen Listen auf.
+
+
+			# Purpose: Return largest value out of a list of longs.
+
+			.section .data
+
+				list:   .long 12,55,200,6,95,111,128,125,85,0
+				list2:  .long 123,51,16,87,83,7,0
+				list3:  .long 71,69,19,62,9,23,12,90,44,0
+
+
+			.section .text
+				.globl _start
+
+
+			_start:
+				pushl list        # call function with list1 as param
+				call maximumfinder
+				addl $4, %esp     # reset stack pointer to top of old stack
+				
+				
+				pushl list2       #call function again, but with list2 
+				call maximumfinder
+				addl $4, %esp     # reset stack pointer to top of old stack
+				
+				
+				pushl list3       #call function for the last time with list3
+				call maximumfinder
+				addl $4, %esp     # reset stack pointer to top of old stack
+				
+				
+				movl %eax, %ebx    # copy result (returned in %eax) to ebx
+				movl $1, %eax      # set exit code to 1
+				int  $0x80         # exit program
+
+
+			# Purpose: Iterate over list until value '0' is reached.
+			#          Remember the largest value in the list.
+
+			.type maximumfinder, @function
+
+			maximumfinder:
+
+				pushl %ebp
+				movl  %esp, %ebp
+				addl  $4, %esp        # local variable: largest list item
+				movl  $0, %ecx        # counter = 0
+
+
+			   list_iterator_start:
+				movl list(,%ecx,4), %eax  #copy current list item to eax
+				incl %ecx           	  # increment counter
+
+				cmpl $0, %eax        # is current list item = 0?
+				je   loop_end        # then exit
+				
+				cmpl -4(%ebp), %eax   # current list item > old record?
+				jg   replace_current  # then replace old record
+
+				jmp list_iterator_start
+
+
+
+			   replace_current:
+				movl %eax, -4(%ebp)     # move current list item into
+				jmp list_iterator_start # local variable, then iterate again
+				
+
+
+			   loop_end:
+				movl -4(%ebp), %eax   # move return value to %eax
+				movl %ebp, %esp       # 'delete' local variables
+				popl %ebp             # reset ebp to old address
+				ret                   # return eip to caller
